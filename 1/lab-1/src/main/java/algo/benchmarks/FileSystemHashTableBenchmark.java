@@ -73,6 +73,11 @@ public class FileSystemHashTableBenchmark {
     }
 
     @Benchmark
+    public void getSameEntry(Blackhole bh) throws IOException {
+        bh.consume(table.get(keys.get(0)));
+    }
+
+    @Benchmark
     public void getMissing(Blackhole bh) throws IOException {
         bh.consume(table.get("nonexistent_doc_" + rng.nextInt(100_000)));
     }

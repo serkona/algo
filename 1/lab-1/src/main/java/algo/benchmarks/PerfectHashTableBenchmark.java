@@ -52,6 +52,11 @@ public class PerfectHashTableBenchmark {
     }
 
     @Benchmark
+    public void getSameEntry(Blackhole bh) {
+        bh.consume(pht.get(keys[0]));
+    }
+
+    @Benchmark
     public void getMissing(Blackhole bh) {
         bh.consume(pht.get("nonexistent_doc_" + rng.nextLong()));
     }
