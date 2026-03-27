@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 @State(Scope.Thread)
 @Warmup(iterations = 3, time = 2)
 @Measurement(iterations = 5, time = 3)
-@Fork(1)
+@Fork(3)
 public class GeoIndexBenchmark {
 
     @Param({"1000", "10000", "50000"})
