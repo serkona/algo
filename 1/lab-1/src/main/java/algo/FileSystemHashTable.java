@@ -1,5 +1,8 @@
 package algo;
 
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
@@ -22,10 +25,10 @@ public class FileSystemHashTable implements Closeable {
     private int[] dir;
     private int nextId;
 
-    private final Map<Integer, RandomAccessFile> rafs = new HashMap<>();
-    private final Map<Integer, FileChannel> chs = new HashMap<>();
-    private final Map<Integer, MappedByteBuffer> maps = new HashMap<>();
-    private final Map<Integer, Integer> caps = new HashMap<>();
+    private final Int2ObjectOpenHashMap<RandomAccessFile> rafs = new Int2ObjectOpenHashMap<>();
+    private final Int2ObjectOpenHashMap<FileChannel> chs = new Int2ObjectOpenHashMap<>();
+    private final Int2ObjectOpenHashMap<MappedByteBuffer> maps = new Int2ObjectOpenHashMap<>();
+    private final Int2IntOpenHashMap caps = new Int2IntOpenHashMap();
 
     public FileSystemHashTable(Path baseDir, int pageSize) throws IOException {
         this.baseDir = baseDir;

@@ -22,7 +22,11 @@ public class PerfectHashTableBenchmark {
 
     private PerfectHashTable<String> pht;
     private String[] keys;
-    private Random rng;
+
+    private static final int INDEX_POOL = 100_000;
+    private int[] randomIndices;
+    private String[] missingKeys;
+    private int cursor;
 
     @Setup(Level.Trial)
     public void setup() throws IOException {
@@ -43,27 +47,32 @@ public class PerfectHashTableBenchmark {
         keys = uniqueKeys.toArray(new String[0]);
         String[] values = uniqueVals.toArray(new String[0]);
         pht = new PerfectHashTable<>(keys, values);
-        rng = new Random(99);
+        cursor = 0;
+
+        Random rng = new Random(99);
+        randomIndices = new int[INDEX_POOL];
+        missingKeys = new String[INDEX_POOL];
+        for (int i = 0; i < INDEX_POOL; i++) {
+            randomIndices[i] = rng.nextInt(keys.length);
+            missingKeys[i] = "nonexistent_doc_" + rng.nextLong();
+        }
     }
 
     @Benchmark
     public void getExisting(Blackhole bh) {
-        bh.consume(pht.get(keys[rng.nextInt(keys.length)]));
-    }
-
-    @Benchmark
-    public void getSameEntry(Blackhole bh) {
-        bh.consume(pht.get(keys[0]));
+        bh.consume(pht.get(keys[randomIndices[cursor++ % INDEX_POOL]]));
     }
 
     @Benchmark
     public void getMissing(Blackhole bh) {
-        bh.consume(pht.get("nonexistent_doc_" + rng.nextLong()));
+        bh.consume(pht.get(missingKeys[cursor++ % INDEX_POOL]));
     }
 
     @Benchmark
     @BenchmarkMode(Mode.SingleShotTime)
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    @Warmup(iterations = 5, batchSize = 1)
+    @Measurement(iterations = 20, batchSize = 1)
     public void buildIndex(Blackhole bh) {
         String[] vals = new String[keys.length];
         for (int i = 0; i < keys.length; i++) vals[i] = "v" + i;

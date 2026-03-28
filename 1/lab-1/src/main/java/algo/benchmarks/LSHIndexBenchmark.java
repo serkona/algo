@@ -7,6 +7,7 @@ import org.openjdk.jmh.infra.Blackhole;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
@@ -27,7 +28,11 @@ public class LSHIndexBenchmark {
     private Path tmpDir;
     private List<String> trainClaims;
     private List<String> testClaims;
-    private Random rng;
+
+    private static final int INDEX_POOL = 100_000;
+    private int[] randomIndices;
+    private int cursor;
+    private List<String> shuffledTrain;
 
     @Setup(Level.Trial)
     public void setup() throws IOException {
@@ -52,7 +57,16 @@ public class LSHIndexBenchmark {
         for (String claim : trainClaims) {
             trainIndex.add(claim);
         }
-        rng = new Random(42);
+
+        Random rng = new Random(42);
+        randomIndices = new int[INDEX_POOL];
+        for (int i = 0; i < INDEX_POOL; i++) {
+            randomIndices[i] = rng.nextInt(testClaims.size());
+        }
+        cursor = 0;
+
+        shuffledTrain = new ArrayList<>(trainClaims);
+        Collections.shuffle(shuffledTrain, rng);
     }
 
     @TearDown(Level.Trial)
@@ -68,17 +82,17 @@ public class LSHIndexBenchmark {
 
     @Benchmark
     public void addDocument(Blackhole bh) throws IOException {
-        bh.consume(trainIndex.add(testClaims.get(rng.nextInt(testClaims.size()))));
+        bh.consume(trainIndex.add(testClaims.get(randomIndices[cursor++ % INDEX_POOL])));
     }
 
     @Benchmark
     public void queryCandidates(Blackhole bh) {
-        bh.consume(trainIndex.queryCandidates(testClaims.get(rng.nextInt(testClaims.size()))));
+        bh.consume(trainIndex.queryCandidates(testClaims.get(randomIndices[cursor++ % INDEX_POOL])));
     }
 
     @Benchmark
     public void querySimilar(Blackhole bh) {
-        bh.consume(trainIndex.querySimilar(testClaims.get(rng.nextInt(testClaims.size()))));
+        bh.consume(trainIndex.querySimilar(testClaims.get(randomIndices[cursor++ % INDEX_POOL])));
     }
 
     @Benchmark
@@ -99,9 +113,9 @@ public class LSHIndexBenchmark {
     @BenchmarkMode(Mode.SingleShotTime)
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     public void buildIndex(Blackhole bh) throws IOException {
-        Path dir = tmpDir.resolve("build_" + rng.nextInt(1_000_000));
+        Path dir = tmpDir.resolve("build_" + (cursor++));
         LSHIndex fresh = new LSHIndex(dir, 3, 20, 5, 0.5);
-        for (String claim : trainClaims) {
+        for (String claim : shuffledTrain) {
             fresh.add(claim);
         }
         bh.consume(fresh.size());

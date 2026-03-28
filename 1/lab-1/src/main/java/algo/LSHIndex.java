@@ -1,5 +1,7 @@
 package algo;
 
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
@@ -18,7 +20,7 @@ public class LSHIndex {
     private static final long LARGE_PRIME_2 = 1_000_000_007L;
 
     private final Path storageDir;
-    private final List<Map<Long, List<Integer>>> bandTables;
+    private final List<Long2ObjectOpenHashMap<List<Integer>>> bandTables;
     private final List<int[]> signatures;
     private int docCount;
 
@@ -45,7 +47,7 @@ public class LSHIndex {
 
         this.bandTables = new ArrayList<>();
         for (int b = 0; b < numBands; b++) {
-            bandTables.add(new HashMap<>());
+            bandTables.add(new Long2ObjectOpenHashMap<>());
         }
         this.signatures = new ArrayList<>();
         this.docCount = 0;

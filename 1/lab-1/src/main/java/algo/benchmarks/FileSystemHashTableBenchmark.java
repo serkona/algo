@@ -24,11 +24,15 @@ public class FileSystemHashTableBenchmark {
 
     private FileSystemHashTable table;
     private Path dir;
-    private Random rng;
     private int counter;
 
     private List<String> keys;
     private List<String> values;
+
+    private static final int INDEX_POOL = 100_000;
+    private int[] randomIndices;
+    private String[] missingKeys;
+    private int cursor;
 
     @Setup(Level.Trial)
     public void setup() throws IOException {
@@ -40,12 +44,21 @@ public class FileSystemHashTableBenchmark {
 
         dir = Files.createTempDirectory("fsht_bench");
         table = new FileSystemHashTable(dir, pageSize);
-        rng = new Random(42);
         counter = 0;
+        cursor = 0;
 
         int preload = Math.min(1000, keys.size());
         for (int i = 0; i < preload; i++) {
             table.put(keys.get(i), values.get(i));
+        }
+
+        Random rng = new Random(42);
+        randomIndices = new int[INDEX_POOL];
+        missingKeys = new String[INDEX_POOL];
+        int bound = Math.min(1000, keys.size());
+        for (int i = 0; i < INDEX_POOL; i++) {
+            randomIndices[i] = rng.nextInt(bound);
+            missingKeys[i] = "nonexistent_doc_" + rng.nextInt(100_000);
         }
     }
 
@@ -69,28 +82,23 @@ public class FileSystemHashTableBenchmark {
 
     @Benchmark
     public void getExisting(Blackhole bh) throws IOException {
-        bh.consume(table.get(keys.get(rng.nextInt(Math.min(1000, keys.size())))));
-    }
-
-    @Benchmark
-    public void getSameEntry(Blackhole bh) throws IOException {
-        bh.consume(table.get(keys.get(0)));
+        bh.consume(table.get(keys.get(randomIndices[cursor++ % INDEX_POOL])));
     }
 
     @Benchmark
     public void getMissing(Blackhole bh) throws IOException {
-        bh.consume(table.get("nonexistent_doc_" + rng.nextInt(100_000)));
+        bh.consume(table.get(missingKeys[cursor++ % INDEX_POOL]));
     }
 
     @Benchmark
     public void updateExisting() throws IOException {
-        int idx = rng.nextInt(Math.min(1000, keys.size()));
+        int idx = randomIndices[cursor++ % INDEX_POOL];
         table.put(keys.get(idx), "updated_" + counter++);
     }
 
     @Benchmark
     public void deleteAndReinsert() throws IOException {
-        int idx = rng.nextInt(Math.min(1000, keys.size()));
+        int idx = randomIndices[cursor++ % INDEX_POOL];
         table.delete(keys.get(idx));
         table.put(keys.get(idx), values.get(idx));
     }
