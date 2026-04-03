@@ -33,6 +33,7 @@ public class LSHIndexBenchmark {
     private int[] randomIndices;
     private int cursor;
     private List<String> shuffledTrain;
+    private Random shuffleRng;
 
     @Setup(Level.Trial)
     public void setup() throws IOException {
@@ -66,7 +67,12 @@ public class LSHIndexBenchmark {
         cursor = 0;
 
         shuffledTrain = new ArrayList<>(trainClaims);
-        Collections.shuffle(shuffledTrain, rng);
+        shuffleRng = new Random(rng.nextLong());
+    }
+
+    @Setup(Level.Invocation)
+    public void reshuffleTrain() {
+        Collections.shuffle(shuffledTrain, shuffleRng);
     }
 
     @TearDown(Level.Trial)
