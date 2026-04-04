@@ -168,7 +168,7 @@ public class LSHIndex {
         int[] sig = new int[numHashFunctions];
         Arrays.fill(sig, Integer.MAX_VALUE);
         for (long s : shingles) {
-            long sUnsigned = s & 0x7fffffffffffffffL;
+            long sUnsigned = s & Long.MAX_VALUE;
             for (int i = 0; i < numHashFunctions; i++) {
                 int h = (int) ((hashA[i] * sUnsigned + hashB[i]) % LARGE_PRIME_1);
                 if (h < sig[i]) {
