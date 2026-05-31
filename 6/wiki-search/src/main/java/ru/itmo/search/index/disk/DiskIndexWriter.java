@@ -22,18 +22,19 @@ public final class DiskIndexWriter {
     public static final String DOCLEN = "doclen.bin";
     public static final String NAMES = "names.bin";
     public static final String NAMES_IDX = "names.idx";
+    public static final String POSTINGS_FORMAT = "2";
 
     private final IndexConfig config;
     private final IntCodec deltaDocId;
     private final IntCodec freqCodec;
-    private final IntCodec deltaPos;
+    private final IntCodec posCodec;
     private final IntCodec skipCodec = new DeltaCodec(new VarByteCodec());
 
     public DiskIndexWriter(IndexConfig config) {
         this.config = config;
         this.deltaDocId = new DeltaCodec(config.docIdBase());
         this.freqCodec = config.freqBase();
-        this.deltaPos = new DeltaCodec(config.posBase());
+        this.posCodec = config.posBase();
     }
 
     public void write(MemoryIndex index, Path dir) throws IOException {
@@ -92,7 +93,7 @@ public final class DiskIndexWriter {
         int[] blockOffset = new int[numBlocks + 1];
         int[] rebased = new int[blockSize];
         int[] freqTmp = new int[blockSize];
-        int[] posTmp = new int[8];
+        int[] posGapTmp = new int[16];
 
         int prevBlockLast = 0;
         for (int b = 0; b < numBlocks; b++) {
@@ -110,15 +111,26 @@ public final class DiskIndexWriter {
             }
             freqCodec.encode(freqTmp, len, blocks);
 
+            int totalPositions = 0;
+            for (int i = 0; i < len; i++) {
+                totalPositions += p.freqs[start + i];
+            }
+            if (posGapTmp.length < totalPositions) {
+                posGapTmp = new int[Integer.highestOneBit(Math.max(1, totalPositions)) << 1];
+            }
+            int out = 0;
             for (int i = 0; i < len; i++) {
                 int doc = start + i;
                 int f = p.freqs[doc];
-                if (posTmp.length < f) {
-                    posTmp = new int[Integer.highestOneBit(f) << 1];
+                int prev = 0;
+                int base = p.posStart[doc];
+                for (int j = 0; j < f; j++) {
+                    int pos = p.positions[base + j];
+                    posGapTmp[out++] = pos - prev;
+                    prev = pos;
                 }
-                System.arraycopy(p.positions, p.posStart[doc], posTmp, 0, f);
-                deltaPos.encode(posTmp, f, blocks);
             }
+            posCodec.encode(posGapTmp, totalPositions, blocks);
 
             prevBlockLast = p.docIds[start + len - 1];
             blockLastDoc[b] = prevBlockLast;
@@ -179,6 +191,7 @@ public final class DiskIndexWriter {
         props.setProperty("docIdCodec", config.docIdCodec);
         props.setProperty("freqCodec", config.freqCodec);
         props.setProperty("posCodec", config.posCodec);
+        props.setProperty("postingsFormat", POSTINGS_FORMAT);
         props.setProperty("segmentSizeBytes", Long.toString(config.segmentSizeBytes));
         try (OutputStream out = Files.newOutputStream(dir.resolve(META))) {
             props.store(out, "wiki-search on-disk index metadata");

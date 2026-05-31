@@ -104,9 +104,9 @@ public final class Main {
 
     private static IndexConfig configFrom(Map<String, String> opt) {
         return new IndexConfig(
-                intOpt(opt, "blockSize", 128),
+                intOpt(opt, "blockSize", 256),
                 opt.getOrDefault("docIdCodec", "pfor"),
-                opt.getOrDefault("freqCodec", "vbyte"),
+                opt.getOrDefault("freqCodec", "bitpack"),
                 opt.getOrDefault("posCodec", "pfor"),
                 longOpt(opt, "segmentSizeBytes", IndexConfig.DEFAULT_SEGMENT_SIZE_BYTES));
     }
@@ -156,8 +156,8 @@ public final class Main {
                 wiki-search — boolean + BM25 full-text search engine
                 usage:
                   build  --out DIR --corpus FILE.jsonl
-                         [--blockSize 128] [--segmentSizeBytes N]
-                         [--docIdCodec pfor] [--freqCodec vbyte] [--posCodec pfor] [--maxDocs N]
+                         [--blockSize 256] [--segmentSizeBytes N]
+                         [--docIdCodec pfor] [--freqCodec bitpack] [--posCodec pfor] [--maxDocs N]
                   shell  --index DIR [--k 10] [--mode boolean|wand|exhaustive] [--k1 1.2 --b 0.75]
                   search --index DIR --q "QUERY" [--k 10] [--mode ...] [--wandf 1.0] [--export OUT]""");
     }

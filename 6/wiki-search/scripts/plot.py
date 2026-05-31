@@ -26,6 +26,7 @@ def save(fig, name):
 
 def plot_compression():
     df = pd.read_csv(os.path.join(RESULTS, "compression.csv"))
+    df = df[df["profile"] != "raw+raw+raw"].copy()
     df["MB"] = df["postings_bytes"] / 1e6
     df["total_MB"] = df["total_bytes"] / 1e6
 
@@ -84,32 +85,29 @@ def plot_blocksize():
 
 def plot_backend():
     df = pd.read_csv(os.path.join(RESULTS, "backend.csv"))
-    types = [t for t in df["query_type"].unique() if t != "AND"]
     backends = df["backend"].unique()
     import numpy as np
-    x = np.arange(len(types))
-    width = 0.8 / max(1, len(backends))
-    fig, ax = plt.subplots(figsize=(9, 5))
-    for i, be in enumerate(backends):
-        sub = df[df["backend"] == be].set_index("query_type").reindex(types)
-        yerr = sub["ci95_ms"] if "ci95_ms" in sub.columns else sub["std_ms"]
-        ax.bar(x + (i - (len(backends) - 1) / 2) * width, sub["mean_ms"], width, label=be,
-               yerr=yerr, capsize=3)
-    ax.set_xticks(x)
-    ax.set_xticklabels(types)
-    ax.set_ylabel("mean latency per batch, ms")
-    ax.set_title("Query latency: in-memory vs mmap segment size (error bars = 95% CI)")
-    ax.legend()
-    save(fig, "backend_latency.png")
 
-    and_df = df[df["query_type"] == "AND"]
-    fig, ax = plt.subplots(figsize=(7, 4))
-    yerr = and_df["ci95_ms"] if "ci95_ms" in and_df.columns else and_df["std_ms"]
-    ax.bar(and_df["backend"], and_df["mean_ms"], yerr=yerr, capsize=3, color="#4C72B0")
-    ax.set_ylabel("mean latency per batch, ms")
-    ax.set_title("AND latency: in-memory vs mmap segment size (error bars = 95% CI)")
-    ax.tick_params(axis="x", rotation=15)
-    save(fig, "backend_and_latency.png")
+    def grouped_bars(ax, types, title):
+        x = np.arange(len(types))
+        width = 0.8 / max(1, len(backends))
+        for i, be in enumerate(backends):
+            sub = df[df["backend"] == be].set_index("query_type").reindex(types)
+            yerr = sub["ci95_ms"] if "ci95_ms" in sub.columns else sub["std_ms"]
+            ax.bar(x + (i - (len(backends) - 1) / 2) * width, sub["mean_ms"], width,
+                   label=be, yerr=yerr, capsize=3)
+        ax.set_xticks(x)
+        ax.set_xticklabels(types)
+        ax.set_title(title)
+        ax.grid(axis="y", alpha=0.25)
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+    grouped_bars(axes[0], ["AND", "ADJ", "NEAR"], "Short boolean / positional operations")
+    grouped_bars(axes[1], ["OR", "BM25"], "Wide union and ranked retrieval")
+    axes[0].set_ylabel("mean latency per batch, ms")
+    axes[1].legend(loc="upper right")
+    fig.suptitle("Backend latency split by query cost class (error bars = 95% CI)")
+    save(fig, "backend_latency.png")
 
 
 def plot_recall():

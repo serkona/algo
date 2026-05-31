@@ -3,7 +3,7 @@
 # Test stand launcher. Builds (once) a compressed on-disk index and opens the interactive
 # search shell pre-configured for one of two operating points from the real-Wikipedia benchmarks:
 #
-#   balanced    vbyte/bitpack/vbyte postings (best measured size + high AND QPS), blockSize 128,
+#   balanced    pfor/bitpack/pfor postings (best measured size + best AND QPS), blockSize 256,
 #               WAND F=1.0 (lossless top-K)
 #   max-recall  same index profile, exhaustive scoring
 #
@@ -15,7 +15,7 @@
 # Env overrides:
 #   CORPUS=/path/to/wiki.jsonl   index a real corpus (default: data/wikipedia.jsonl if present)
 #   MAXDOCS=500000               cap indexed documents
-#   IDX=dir                      index location (default target/stand-index-<profile>-vbyte-bitpack)
+#   IDX=dir                      index location (default target/stand-index-<profile>-v2-pfor-bitpack-bs256)
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -28,16 +28,16 @@ JAVA="${JAVA_HOME:+$JAVA_HOME/bin/}java"
 
 case "$PROFILE" in
   balanced)
-    CODEC=(--docIdCodec vbyte --freqCodec bitpack --posCodec vbyte --blockSize 128)
+    CODEC=(--docIdCodec pfor --freqCodec bitpack --posCodec pfor --blockSize 256)
     MODE=wand; WANDF=1.0 ;;
   max-recall)
-    CODEC=(--docIdCodec vbyte --freqCodec bitpack --posCodec vbyte --blockSize 128)
+    CODEC=(--docIdCodec pfor --freqCodec bitpack --posCodec pfor --blockSize 256)
     MODE=exhaustive; WANDF=1.0 ;;
   *) echo "usage: $0 [balanced|max-recall]"; exit 1 ;;
 esac
 
 CORPUS="${CORPUS:-data/wikipedia.jsonl}"
-IDX="${IDX:-target/stand-index-$PROFILE-vbyte-bitpack}"
+IDX="${IDX:-target/stand-index-$PROFILE-v2-pfor-bitpack-bs256}"
 if [ ! -d "$IDX" ]; then
   if [ ! -f "$CORPUS" ]; then
     echo "Corpus file not found: $CORPUS"

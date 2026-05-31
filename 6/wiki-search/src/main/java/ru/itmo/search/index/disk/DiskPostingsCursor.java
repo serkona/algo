@@ -27,7 +27,6 @@ public final class DiskPostingsCursor implements PositionalCursor {
     private boolean posDecoded = false;
     private int[] blockPositions = new int[16];
     private final int[] posStart;
-    private int[] posDocTmp = new int[8];
     private int[] curPosBuf = new int[8];
 
     public DiskPostingsCursor(DiskIndex index, long regionOffset, int df) {
@@ -161,14 +160,16 @@ public final class DiskPostingsCursor implements PositionalCursor {
         }
         ByteBuffer wb = base.duplicate();
         wb.position(posSectionWithin);
+        index.posCodec.decode(wb, blockPositions, total);
         int off = 0;
         for (int i = 0; i < blockLen; i++) {
             int f = freqs[i];
-            if (posDocTmp.length < f) {
-                posDocTmp = new int[Integer.highestOneBit(Math.max(1, f)) << 1];
+            int prev = 0;
+            for (int j = 0; j < f; j++) {
+                int idx = off + j;
+                prev += blockPositions[idx];
+                blockPositions[idx] = prev;
             }
-            index.deltaPos.decode(wb, posDocTmp, f);
-            System.arraycopy(posDocTmp, 0, blockPositions, off, f);
             off += f;
         }
         posDecoded = true;

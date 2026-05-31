@@ -4,6 +4,9 @@
 ./run.sh balanced
 ```
 
+`balanced` собирает on-disk индекс `pfor/bitpack/pfor`, `blockSize=256` и запускает shell в режиме
+`WAND F=1.0`.
+
 После появления приглашения `>` можно вставлять запросы:
 
 ```text

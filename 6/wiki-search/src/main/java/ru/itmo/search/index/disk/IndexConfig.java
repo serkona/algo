@@ -26,7 +26,7 @@ public final class IndexConfig {
     }
 
     public static IndexConfig defaults() {
-        return new IndexConfig(128, "pfor", "vbyte", "pfor");
+        return new IndexConfig(256, "pfor", "bitpack", "pfor");
     }
 
     public IntCodec docIdBase() {

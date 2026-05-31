@@ -101,10 +101,10 @@ public final class ProfileHarness {
 
     private static IndexConfig configFrom(Map<String, String> opt) {
         return new IndexConfig(
-                intOpt(opt, "blockSize", 128),
-                opt.getOrDefault("docIdCodec", "vbyte"),
+                intOpt(opt, "blockSize", 256),
+                opt.getOrDefault("docIdCodec", "pfor"),
                 opt.getOrDefault("freqCodec", "bitpack"),
-                opt.getOrDefault("posCodec", "vbyte"),
+                opt.getOrDefault("posCodec", "pfor"),
                 longOpt(opt, "segmentSizeBytes", IndexConfig.DEFAULT_SEGMENT_SIZE_BYTES));
     }
 
@@ -142,8 +142,8 @@ public final class ProfileHarness {
     private static void usage() {
         System.out.println("""
                 usage:
-                  ProfileHarness build --corpus data/wikipedia.jsonl --out target/profile-balanced-vbyte-bitpack-index [--maxDocs 500000]
-                  ProfileHarness query --index target/profile-balanced-vbyte-bitpack-index --op and|or|adj|near|bm25 [--seconds 120]
+                  ProfileHarness build --corpus data/wikipedia.jsonl --out target/profile-balanced-v2-pfor-bitpack-bs256-index [--maxDocs 500000]
+                  ProfileHarness query --index target/profile-balanced-v2-pfor-bitpack-bs256-index --op and|or|adj|near|bm25 [--seconds 120]
                 """);
     }
 }

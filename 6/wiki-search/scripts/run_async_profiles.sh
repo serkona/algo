@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Run balanced build/query profile scenarios under async-profiler.
-# Balanced means the benchmark-selected profile: vbyte/bitpack/vbyte, blockSize=128.
+# Balanced means the report/demo profile: pfor/bitpack/pfor, blockSize=256.
 #
 # Outputs:
 #   profiles/build-balanced-cpu.html
@@ -36,10 +36,10 @@ PROFILE_ATTACH_DELAY="${PROFILE_ATTACH_DELAY:-5}"
 PROFILE_MODE="${PROFILE_MODE:-both}"   # both | cpu | alloc
 PROFILE_TARGET="${PROFILE_TARGET:-all}" # all | build | query
 OPS="${OPS:-and or adj near bm25}"
-INDEX_DIR="${INDEX_DIR:-target/profile-balanced-vbyte-bitpack-index}"
+INDEX_DIR="${INDEX_DIR:-target/profile-balanced-v2-pfor-bitpack-bs256-index}"
 CPU_INTERVAL="${CPU_INTERVAL:-1ms}"
 ALLOC_INTERVAL="${ALLOC_INTERVAL:-512k}"
-BALANCED_ARGS=(--docIdCodec vbyte --freqCodec bitpack --posCodec vbyte --blockSize 128)
+BALANCED_ARGS=(--docIdCodec pfor --freqCodec bitpack --posCodec pfor --blockSize 256)
 
 if [[ -z "$ASPROF" ]]; then
   echo "async-profiler CLI 'asprof' was not found."

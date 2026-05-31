@@ -47,7 +47,7 @@ public final class DiskIndex implements InvertedIndex {
 
     final IntCodec deltaDocId;
     final IntCodec freqCodec;
-    final IntCodec deltaPos;
+    final IntCodec posCodec;
     final IntCodec skipCodec = new DeltaCodec(new VarByteCodec());
     final long segmentSizeBytes;
 
@@ -58,7 +58,7 @@ public final class DiskIndex implements InvertedIndex {
         this.blockSize = config.blockSize;
         this.deltaDocId = new DeltaCodec(config.docIdBase());
         this.freqCodec = config.freqBase();
-        this.deltaPos = new DeltaCodec(config.posBase());
+        this.posCodec = config.posBase();
         this.segmentSizeBytes = config.segmentSizeBytes;
         this.numDocs = numDocs;
         this.totalTokens = totalTokens;
@@ -79,6 +79,11 @@ public final class DiskIndex implements InvertedIndex {
         }
         int numDocs = Integer.parseInt(meta.getProperty("numDocs"));
         long totalTokens = Long.parseLong(meta.getProperty("totalTokens"));
+        String postingsFormat = meta.getProperty("postingsFormat");
+        if (!DiskIndexWriter.POSTINGS_FORMAT.equals(postingsFormat)) {
+            throw new IOException("Unsupported postings format: " + postingsFormat
+                    + ". Rebuild the index with the current code.");
+        }
         IndexConfig config = new IndexConfig(
                 Integer.parseInt(meta.getProperty("blockSize")),
                 meta.getProperty("docIdCodec"),

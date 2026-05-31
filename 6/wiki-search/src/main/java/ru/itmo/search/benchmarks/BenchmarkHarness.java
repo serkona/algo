@@ -82,20 +82,21 @@ public final class BenchmarkHarness {
     private static void compressionSweep(MemoryIndex mem, StandardAnalyzer analyzer, Workload work,
                                          Path workDir, Path outDir, long totalPostings) throws IOException {
         IndexConfig[] profiles = {
-                new IndexConfig(128, "raw", "raw", "raw"),
-                new IndexConfig(128, "vbyte", "vbyte", "vbyte"),
-                new IndexConfig(128, "vbyte", "bitpack", "vbyte"),
-                new IndexConfig(128, "bitpack", "bitpack", "bitpack"),
-                new IndexConfig(128, "pfor", "vbyte", "pfor"),
-                new IndexConfig(128, "pfor", "bitpack", "pfor"),
+                new IndexConfig(256, "raw", "raw", "raw"),
+                new IndexConfig(256, "vbyte", "vbyte", "vbyte"),
+                new IndexConfig(256, "vbyte", "bitpack", "vbyte"),
+                new IndexConfig(256, "bitpack", "bitpack", "bitpack"),
+                new IndexConfig(256, "pfor", "vbyte", "pfor"),
+                new IndexConfig(256, "pfor", "bitpack", "pfor"),
         };
         long rawPostings = -1;
         try (PrintWriter w = new PrintWriter(Files.newBufferedWriter(outDir.resolve("compression.csv")))) {
             w.println("profile,blockSize,docIdCodec,freqCodec,posCodec,postings_bytes,doclen_bytes,"
                     + "names_bytes,dict_bytes,total_bytes,bits_per_posting,ratio_vs_raw,build_write_ms,"
                     + "and_mean_ms,and_std_ms,and_ci95_ms,and_qps,and_qps_low,and_qps_high,"
-                    + "bm25_mean_ms,bm25_std_ms,bm25_ci95_ms,bm25_qps,bm25_qps_low,bm25_qps_high,"
-                    + "adj_mean_ms,adj_std_ms,adj_ci95_ms,adj_qps,adj_qps_low,adj_qps_high");
+                    + "adj_mean_ms,adj_std_ms,adj_ci95_ms,adj_qps,adj_qps_low,adj_qps_high,"
+                    + "or_mean_ms,or_std_ms,or_ci95_ms,or_qps,or_qps_low,or_qps_high,"
+                    + "bm25_mean_ms,bm25_std_ms,bm25_ci95_ms,bm25_qps,bm25_qps_low,bm25_qps_high");
             for (IndexConfig cfg : profiles) {
                 Path dir = workDir.resolve("cmp_" + cfg.docIdCodec + "_" + cfg.freqCodec + "_" + cfg.posCodec);
                 long tw = System.nanoTime();
@@ -117,6 +118,8 @@ public final class BenchmarkHarness {
                     SearchEngine eng = new SearchEngine(disk, analyzer, BM25Scorer.defaults());
                     Bench.Timing and = Bench.measure(WARMUP, ROUNDS, work.and.size(),
                             () -> runBoolean(eng, work.and));
+                    Bench.Timing or = Bench.measure(WARMUP, ROUNDS, work.or.size(),
+                            () -> runBoolean(eng, work.or));
                     Bench.Timing bm25 = Bench.measure(WARMUP, ROUNDS, work.bm25.size(),
                             () -> runExhaustive(eng, work.bm25));
                     Bench.Timing adj = Bench.measure(WARMUP, ROUNDS, work.adj.size(),
@@ -124,15 +127,18 @@ public final class BenchmarkHarness {
                     w.printf("%s,%d,%s,%s,%s,%d,%d,%d,%d,%d,%.3f,%.3f,%.1f,"
                                     + "%.4f,%.4f,%.4f,%.1f,%.1f,%.1f,"
                                     + "%.4f,%.4f,%.4f,%.1f,%.1f,%.1f,"
+                                    + "%.4f,%.4f,%.4f,%.1f,%.1f,%.1f,"
                                     + "%.4f,%.4f,%.4f,%.1f,%.1f,%.1f%n",
                             cfg.docIdCodec + "+" + cfg.freqCodec + "+" + cfg.posCodec, cfg.blockSize,
                             cfg.docIdCodec, cfg.freqCodec, cfg.posCodec,
                             postings, doclen, names, dict, total, bitsPerPosting, ratio, writeMs,
                             and.meanMs(), and.stdMs(), and.ci95Ms(), and.qps(), and.qpsLow(), and.qpsHigh(),
-                            bm25.meanMs(), bm25.stdMs(), bm25.ci95Ms(), bm25.qps(), bm25.qpsLow(), bm25.qpsHigh(),
-                            adj.meanMs(), adj.stdMs(), adj.ci95Ms(), adj.qps(), adj.qpsLow(), adj.qpsHigh());
+                            adj.meanMs(), adj.stdMs(), adj.ci95Ms(), adj.qps(), adj.qpsLow(), adj.qpsHigh(),
+                            or.meanMs(), or.stdMs(), or.ci95Ms(), or.qps(), or.qpsLow(), or.qpsHigh(),
+                            bm25.meanMs(), bm25.stdMs(), bm25.ci95Ms(), bm25.qps(), bm25.qpsLow(), bm25.qpsHigh());
                     System.out.printf("  [cmp] %-22s postings=%.1fMB ratio=%.2fx bits/posting=%.2f and=%.0fqps%n",
-                            cfg.docIdCodec + "+" + cfg.posCodec, postings / 1e6, ratio, bitsPerPosting, and.qps());
+                            cfg.docIdCodec + "+" + cfg.freqCodec + "+" + cfg.posCodec,
+                            postings / 1e6, ratio, bitsPerPosting, and.qps());
                 }
                 deleteDir(dir);
             }
@@ -146,7 +152,7 @@ public final class BenchmarkHarness {
             w.println("blockSize,postings_bytes,total_bytes,bits_per_posting,"
                     + "and_mean_ms,and_std_ms,and_ci95_ms,and_qps,and_qps_low,and_qps_high");
             for (int bs : blockSizes) {
-                IndexConfig cfg = new IndexConfig(bs, "vbyte", "bitpack", "vbyte");
+                IndexConfig cfg = new IndexConfig(bs, "pfor", "bitpack", "pfor");
                 Path dir = workDir.resolve("bs_" + bs);
                 new DiskIndexWriter(cfg).write(mem, dir);
                 long postings = size(dir, DiskIndexWriter.POSTINGS);
@@ -184,9 +190,9 @@ public final class BenchmarkHarness {
             measureBackend(w, "memory", memEng, types);
 
             DiskCfg[] configs = {
-                    new DiskCfg("mmap-128m", new IndexConfig(128, "vbyte", "bitpack", "vbyte", 128L << 20)),
-                    new DiskCfg("mmap-512m", new IndexConfig(128, "vbyte", "bitpack", "vbyte", 512L << 20)),
-                    new DiskCfg("mmap-1024m", new IndexConfig(128, "vbyte", "bitpack", "vbyte", 1L << 30)),
+                    new DiskCfg("mmap-128m", new IndexConfig(256, "pfor", "bitpack", "pfor", 128L << 20)),
+                    new DiskCfg("mmap-512m", new IndexConfig(256, "pfor", "bitpack", "pfor", 512L << 20)),
+                    new DiskCfg("mmap-1024m", new IndexConfig(256, "pfor", "bitpack", "pfor", 1L << 30)),
             };
             for (DiskCfg cfg : configs) {
                 Path dir = workDir.resolve("backend_" + cfg.name.replace('+', '_'));

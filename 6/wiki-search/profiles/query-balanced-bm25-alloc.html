@@ -23,7 +23,7 @@
 	#status {left: 0}
 	#match {right: 0}
 	#reset {cursor: pointer}
-	#canvas {width: 100%; height: 208px}
+	#canvas {width: 100%; height: 416px}
 </style>
 </head>
 <body style='font: 12px Verdana, sans-serif'>
@@ -78,7 +78,7 @@
 	let level0 = 0, left0 = 0, width0 = 0;
 	let nav = [], navIndex, matchval;
 	let inverted = false;
-	const levels = Array(13);
+	const levels = Array(26);
 	for (let h = 0; h < levels.length; h++) {
 		levels[h] = [];
 	}
@@ -351,31 +351,38 @@ const cpool = [
 ' byte[]',
 ' double[]',
 ' int[]',
-' java.lang.Object[]',
+' java.lang.Class',
 '*String',
 '%nio.DirectByteBufferR',
 '%util.ArrayList',
-'3$Itr',
-'*Comparator$$Lambda$3.0x00000070010489b8',
-'$/lang/String.<init>',
+'*Comparator$$Lambda$4.0x000000e001049198',
+'$/io/PrintStream.format',
+'4printf',
+'%lang/String.<init>',
 '1substring',
 '0Latin1.newString',
-'0UTF16.newBytesFor',
 '*invoke/DirectMethodHandle$Holder.newInvokeSpecial',
 'C.allocateInstance',
 '1Invokers$Holder.linkToTargetMethod',
 '%nio/DirectByteBufferR.duplicate',
-'%util/ArrayList.add',
-'4grow',
-'4iterator',
-'4toArray',
-'/s.copyOfRange',
+'%security/AccessController.doPrivileged',
+'?executePrivileged',
+'%text/DecimalFormatSymbols.getInstance',
+'%util/ArrayList.nBits',
+'4removeIf',
+'/s.copyOf',
+'7Range',
 '*Comparator.comparingInt',
+'*Formatter$FormatSpecifier.getZero',
+'DlocalizedMagnitude',
+'Dprint',
+'IInteger',
+'3.format',
+'4zero',
+' long[]',
 ' ru.itmo.search.index.disk.DiskPostingsCursor',
 '/rank.ScoreDoc',
 '5earchEngine$TermState',
-'J[]',
-'4TopKCollector',
 '"/itmo/search/analysis/StandardAnalyzer.analyze',
 'Iemit',
 '/benchmarks/ProfileHarness.main',
@@ -385,86 +392,115 @@ const cpool = [
 'DdocName',
 'DregionAt',
 '>PostingsCursor.<init>',
+'Madvance',
 'MloadBlock',
 'MnextDoc',
 '/rank/SearchEngine.advanceAll',
 'AbuildStates',
+'ApruneExhausted',
 'ArankedDisjunctive',
 'AsearchRankedWand',
 'AwithNames',
 '4TopKCollector.<init>',
-'BtoSortedList'
+'BtoSortedList',
+' sun/util/locale/provider/JRELocaleProviderAdapter$$Lambda$63.0x800000064.run',
+'Q.createLanguageTagSet',
+'XSupportedLocaleString',
+'RgetDecimalFormatSymbolsProvider',
+'ULanguageTagSet',
+'VocaleServiceProvider',
+'Rlambda$getDecimalFormatSymbolsProvider$4',
+'9LocaleProviderAdapter.findAdapter',
+'OgetAdapter'
 ];
 unpack(cpool);
 
-n(3,37444)
+n(3,39796)
+u(305)
+u(313)
+u(81,1)
+u(73)
+u(241)
+u(225)
+u(233)
+u(225)
+u(225)
+u(217)
+u(209)
 u(249)
-u(257)
-u(265)
-u(345)
-u(337)
-u(58,2)
-n(185,36000)
+u(161)
+u(513)
+u(505)
+u(489)
+u(473)
+u(145)
+u(153)
+u(449)
+u(497)
+u(481)
+u(457)
+u(465)
+u(34)
+f(321,3,1,39795)
+u(417)
+u(409)
+u(58,1)
+n(201,38894)
 u(129)
 u(113)
 u(121)
-u(74)
-f(226,6,36000,2)
-n(233)
-u(241)
-u(89,1)
-u(97)
-u(42)
-f(145,8,1)
-u(145)
-u(153)
-u(153)
-u(34)
-f(313,6,1,7)
-u(305)
-u(137)
-u(137)
-u(50)
-f(321,6,7,1130)
-u(313)
-u(305)
-u(137)
-u(137)
-u(50)
-f(329,6,1130,255)
-u(145,1)
-u(145)
-u(153)
-u(153)
-u(34)
-f(161,7,1)
 u(66)
-f(169,7,1)
-u(218)
-f(210,7,1)
-n(273,251)
-u(194,2)
-n(297,249)
-u(26,248)
-n(289,1)
+f(289,6,38894,1)
+u(297)
+u(97)
+u(105)
+u(42)
+f(361,6,1,2)
+u(369)
+u(137)
 u(137)
 u(50)
-f(353,6,1,31)
-u(281)
-u(10,9)
-n(42,4)
-n(81,18)
-u(81)
+f(377,6,2,6)
+u(369)
+u(137)
+u(137)
+u(50)
+f(385,6,6,627)
+u(377,625)
+u(369)
+u(137)
+u(137)
+u(50)
+f(401,7,625,2)
+u(177)
+u(177)
+u(169)
+u(258)
+f(393,6,2,237)
+u(282,2)
+n(329,235)
+u(266,4)
+n(353,231)
+u(26,226)
+n(345,5)
+u(137)
+u(50)
+f(425,6,5,15)
+u(337)
+u(10,6)
+n(42,2)
+n(89,7)
+u(89)
 u(10,1)
-n(105)
+n(185)
 u(10)
-f(177,10,1,16)
+f(193,10,1,5)
 u(10)
-f(361,6,16,2)
-u(18,1)
-n(26)
-f(369,6,1,13)
-u(202)
+f(433,6,5,6)
+u(18,2)
+n(26,4)
+f(441,6,4,6)
+u(274)
 
 search();
 </script></body></html>

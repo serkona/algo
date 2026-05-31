@@ -4,72 +4,48 @@ import java.nio.ByteBuffer;
 
 public final class PForDeltaCodec implements IntCodec {
 
-    private static final double COVERAGE = 0.90;
-
     @Override
     public String name() {
         return "pfor";
     }
 
-    static int chooseBaseBits(int[] values, int len) {
-        if (len == 0) {
-            return 0;
-        }
-        int[] hist = new int[33];
-        for (int i = 0; i < len; i++) {
-            int v = values[i];
-            int bits = v == 0 ? 0 : 32 - Integer.numberOfLeadingZeros(v);
-            hist[bits]++;
-        }
-        int target = (int) Math.ceil(COVERAGE * len);
-        int cum = 0;
-        for (int b = 0; b <= 32; b++) {
-            cum += hist[b];
-            if (cum >= target) {
-                return b;
-            }
-        }
-        return 32;
-    }
-
     @Override
     public void encode(int[] values, int len, ByteWriter out) {
-        int b = chooseBaseBits(values, len);
-        long mask = (b == 0) ? 0 : ((b == 32) ? 0xFFFFFFFFL : ((1L << b) - 1));
+        int b = chooseBestBits(values, len);
+        long mask = mask(b);
 
         int nExc = 0;
         for (int i = 0; i < len; i++) {
-            if ((values[i] & ~mask) != 0) {
+            if (isException(values[i], mask)) {
                 nExc++;
             }
         }
         out.putByte(b);
         out.putVarInt(nExc);
-        if (nExc > 0) {
-            for (int i = 0; i < len; i++) {
-                if ((values[i] & ~mask) != 0) {
-                    out.putVarInt(i);
-                    out.putVarInt(values[i]);
-                }
-            }
-        }
-        if (b == 0) {
-            return;
-        }
         long acc = 0;
         int accBits = 0;
-        for (int i = 0; i < len; i++) {
-            long packed = ((values[i] & ~mask) != 0) ? 0L : (values[i] & mask);
-            acc |= packed << accBits;
-            accBits += b;
-            while (accBits >= 8) {
+        if (b > 0) {
+            for (int i = 0; i < len; i++) {
+                long packed = values[i] & mask;
+                acc |= packed << accBits;
+                accBits += b;
+                while (accBits >= 8) {
+                    out.putByte((int) (acc & 0xFF));
+                    acc >>>= 8;
+                    accBits -= 8;
+                }
+            }
+            if (accBits > 0) {
                 out.putByte((int) (acc & 0xFF));
-                acc >>>= 8;
-                accBits -= 8;
             }
         }
-        if (accBits > 0) {
-            out.putByte((int) (acc & 0xFF));
+        int prevPos = 0;
+        for (int i = 0; i < len; i++) {
+            if (isException(values[i], mask)) {
+                out.putVarInt(i - prevPos);
+                out.putVarInt(values[i] >>> b);
+                prevPos = i;
+            }
         }
     }
 
@@ -77,22 +53,80 @@ public final class PForDeltaCodec implements IntCodec {
     public void decode(ByteBuffer in, int[] out, int len) {
         int b = in.get() & 0xFF;
         int nExc = readVarInt(in);
-        int[] excPos = null;
-        int[] excVal = null;
-        if (nExc > 0) {
-            excPos = new int[nExc];
-            excVal = new int[nExc];
-            for (int e = 0; e < nExc; e++) {
-                excPos[e] = readVarInt(in);
-                excVal[e] = readVarInt(in);
-            }
-        }
         BitPackingCodec.unpack(in, out, len, b);
-        if (nExc > 0) {
-            for (int e = 0; e < nExc; e++) {
-                out[excPos[e]] = excVal[e];
+        int pos = 0;
+        for (int e = 0; e < nExc; e++) {
+            pos += readVarInt(in);
+            int high = readVarInt(in);
+            out[pos] |= high << b;
+        }
+    }
+
+    private static int chooseBestBits(int[] values, int len) {
+        int maxBits = bitsRequired(values, len);
+        int bestBits = maxBits;
+        int bestBytes = Integer.MAX_VALUE;
+        for (int b = 0; b <= maxBits; b++) {
+            int bytes = estimatedBytes(values, len, b);
+            if (bytes < bestBytes) {
+                bestBytes = bytes;
+                bestBits = b;
             }
         }
+        return bestBits;
+    }
+
+    private static int estimatedBytes(int[] values, int len, int b) {
+        long mask = mask(b);
+        int bytes = 1 + varIntBytes(exceptionCount(values, len, mask)) + ((len * b + 7) >>> 3);
+        int prevPos = 0;
+        for (int i = 0; i < len; i++) {
+            if (isException(values[i], mask)) {
+                bytes += varIntBytes(i - prevPos);
+                bytes += varIntBytes(values[i] >>> b);
+                prevPos = i;
+            }
+        }
+        return bytes;
+    }
+
+    private static int exceptionCount(int[] values, int len, long mask) {
+        int count = 0;
+        for (int i = 0; i < len; i++) {
+            if (isException(values[i], mask)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private static boolean isException(int value, long mask) {
+        return (value & ~mask) != 0;
+    }
+
+    private static long mask(int bits) {
+        if (bits == 0) {
+            return 0;
+        }
+        return bits == 32 ? 0xFFFFFFFFL : ((1L << bits) - 1);
+    }
+
+    private static int bitsRequired(int[] values, int len) {
+        int max = 0;
+        for (int i = 0; i < len; i++) {
+            max |= values[i];
+        }
+        return max == 0 ? 0 : 32 - Integer.numberOfLeadingZeros(max);
+    }
+
+    private static int varIntBytes(int value) {
+        int bytes = 1;
+        int v = value;
+        while ((v & ~0x7F) != 0) {
+            bytes++;
+            v >>>= 7;
+        }
+        return bytes;
     }
 
     static int readVarInt(ByteBuffer in) {
