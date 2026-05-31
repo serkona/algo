@@ -61,6 +61,8 @@ Raw иногда конкурентен по скорости, но его ра�
 
 Поэтому стенд, backend/block-size sweep и профили дальше используют именно эту конфигурацию.
 
+Skip-таблицы во всех экспериментах кодируются фиксированно через DeltaCodec(VarByteCodec)
+
 ## Размер блока и skip-list
 
 | blockSize | postings, MB | AND ms ± 95% CI | AND qps ± 95% CI |
