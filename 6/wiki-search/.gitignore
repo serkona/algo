@@ -1,0 +1,7 @@
+target/
+data/
+*.log
+results/harness_run.log
+dependency-reduced-pom.xml
+.idea/
+*.iml
